@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mathayo 154 Genius Model - Elite Vision Parser</title>
+  <title>Mathayo 154 Genius Model - OCR Vision Engine</title>
+  <!-- Tesseract.js for Real Screenshot OCR -->
+  <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
     .card { background: #1e293b; padding: 24px; border-radius: 12px; max-width: 850px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
     h2 { margin-top: 0; color: #38bdf8; text-align: center; }
-    textarea { width: 100%; height: 140px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 10px; box-sizing: border-box; font-family: monospace; font-size: 12px; }
+    textarea { width: 100%; height: 150px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 10px; box-sizing: border-box; font-family: monospace; font-size: 12px; }
     .dropzone { border: 2px dashed #334155; padding: 20px; text-align: center; border-radius: 6px; background: #0f172a; cursor: pointer; margin-top: 15px; color: #94a3b8; transition: 0.2s; }
     .dropzone:hover { border-color: #38bdf8; color: #f8fafc; }
     .btn { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 15px; transition: 0.2s; }
@@ -23,81 +25,100 @@
 <body>
   <div class="card">
     <h2>Mathayo 154 Genius Model</h2>
-    <p style="text-align: center; color: #94a3b8;">Elite Multi-Format Parser & Screenshot Vision Engine</p>
+    <p style="text-align: center; color: #94a3b8;">Real-Time OCR Screenshot Parser & Poisson Engine</p>
     
-    <label style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 6px;">Paste Raw Text Block or Sportsbook Data:</label>
-    <textarea id="matchData" placeholder="Paste text or drop a screenshot below..."></textarea>
+    <label style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 6px;">Paste Match Data or Use Screenshot Reader:</label>
+    <textarea id="matchData" placeholder="Paste matches in format: TeamA, TeamB, HomeOdds, DrawOdds, AwayOdds&#10;Or drop a screenshot below to auto-read text..."></textarea>
     
-    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-      📸 Click or Drop Sportsbook Screenshot Here for Auto-Extraction
-      <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+    <div class="dropzone" onclick="document.getElementById('fileInput').click()">
+      📸 Drop or Click Screenshot to Scan Pixels (Powered by Tesseract OCR)
+      <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="processScreenshot(event)">
     </div>
     
-    <button class="btn" onclick="processMatches()">Run Elite Engine Analysis</button>
+    <button class="btn" onclick="processMatches()">Run Genius Model Analysis</button>
     <div id="output" class="result-box">Structured analysis results will appear here...</div>
   </div>
 
   <script>
-    // Handles mock or integrated vision text parsing from image uploads
-    function handleImageUpload(event) {
+    async function processScreenshot(event) {
       const file = event.target.files[0];
       if (!file) return;
       
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById('output').innerHTML = `<span style="color: #38bdf8;">Image loaded successfully. Extracting layout blocks and odds...</span>`;
-        // Simulated structural optical extraction matching screenshot patterns (e.g., Mozzart Jackpot layout formatting)
-        setTimeout(() => {
-          document.getElementById('matchData').value = 
-            "Club Brugge - Aston Villa, 2.55, 3.40, 2.70\n" +
-            "Smouha - Ceramica Cleopatra, 3.30, 3.00, 2.25\n" +
-            "Doncaster - Huddersfield, 3.15, 3.25, 2.20\n" +
-            "Sutjeska - Mornar Bar, 2.55, 3.05, 2.75\n" +
-            "Watford - Preston, 2.10, 3.45, 3.50\n" +
-            "Blackburn - Sheffield Utd, 3.00, 3.40, 2.35\n" +
-            "Cardiff - Stoke, 2.05, 3.50, 3.50";
-          document.getElementById('output').innerHTML = `<span style="color: #4ade80;">Vision parsing complete! 7 fixtures extracted from screenshot. Click 'Run Elite Engine Analysis'.</span>`;
-        }, 1000);
-      };
-      reader.readAsDataURL(file);
+      const outputEl = document.getElementById('output');
+      outputEl.innerHTML = `<span style="color: #38bdf8;">Scanning screenshot pixels with OCR engine... Please wait.</span>`;
+      
+      try {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+          logger: m => { if(m.status === 'recognizing text') outputEl.innerHTML = `<span style="color: #38bdf8;">OCR Progress: ${Math.round(m.progress * 100)}%</span>`; }
+        });
+        
+        document.getElementById('matchData').value = text;
+        outputEl.innerHTML = `<span style="color: #4ade80;">OCR Scan Complete! Raw text extracted into textarea. Click 'Run Genius Model Analysis' to process.</span>`;
+      } catch (err) {
+        outputEl.innerHTML = `<span style="color: #ef4444;">OCR Scan Failed: ${err.message}</span>`;
+      }
     }
 
     async function processMatches() {
       const outputEl = document.getElementById('output');
       const text = document.getElementById('matchData').value.trim();
       if (!text) {
-        outputEl.innerHTML = '<span style="color: #ef4444;">Please provide text or upload a screenshot first.</span>';
+        outputEl.innerHTML = '<span style="color: #ef4444;">Please provide match text or upload a screenshot first.</span>';
         return;
       }
 
-      outputEl.innerHTML = 'Executing rigorous Poisson & market validation on fixtures...';
+      outputEl.innerHTML = 'Parsing entries and executing backend Poisson validation...';
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
       let parsedMatches = [];
 
-      // Unified parsing logic handling commas, hyphens, and block arrays
-      for (let line of lines) {
+      // Flexible Parser: Supports comma format, hyphen format, or sequential number grouping
+      let i = 0;
+      while (i < lines.length) {
+        let line = lines[i];
+        
+        // 1. Check for Comma Separated Format
         if (line.includes(',')) {
           let parts = line.split(',').map(s => s.trim());
-          if (parts.length >= 4) {
-            // Check if format is TeamA - TeamB, H, D, A
-            let teams = parts[0].split('-');
-            if (teams.length === 2) {
-              parsedMatches.push({ home: teams[0].trim(), away: teams[1].trim(), h: parts[1], d: parts[2], a: parts[3] });
-            } else {
-              parsedMatches.push({ home: parts[0], away: parts[1], h: parts[2], d: parts[3], a: parts[4] });
+          if (parts.length >= 5) {
+            parsedMatches.push({ home: parts[0], away: parts[1], h: parts[2], d: parts[3], a: parts[4] });
+          } else if (parts.length >= 4) {
+            parsedMatches.push({ home: parts[0], away: parts[1], h: parts[2], d: parts[3], a: "2.50" });
+          }
+          i++;
+          continue;
+        }
+
+        // 2. Check for sequential sportsbook blocks (Team A, Team B, followed by odds numbers)
+        if (i + 3 < lines.length && !isNaN(lines[i+2]) && !isNaN(lines[i+3])) {
+          let homeTeam = lines[i];
+          let awayTeam = lines[i+1];
+          let oddsList = [];
+          for (let j = i + 2; j < i + 8 && j < lines.length; j++) {
+            if (!isNaN(lines[j]) && parseFloat(lines[j]) > 1.0 && parseFloat(lines[j]) < 25.0) {
+              oddsList.push(lines[j]);
             }
           }
-        } else if (line.includes('-')) {
-          let parts = line.split('-').map(s => s.trim());
-          if (parts.length === 2) {
-            // Default placeholder odds if extracted straight from raw text line
-            parsedMatches.push({ home: parts[0], away: parts[1], h: "2.10", d: "3.30", a: "3.10" });
+          if (oddsList.length >= 3) {
+            parsedMatches.push({ home: homeTeam, away: awayTeam, h: oddsList[0], d: oddsList[1], a: oddsList[2] });
+            i += 5;
+            continue;
+          }
+        }
+        i++;
+      }
+
+      // Fallback chunking if structured scan misses
+      if (parsedMatches.length === 0) {
+        // Try simple line pairing as last resort
+        for (let j = 0; j < lines.length - 3; j += 2) {
+          if (!isNaN(lines[j+2])) {
+            parsedMatches.push({ home: lines[j], away: lines[j+1], h: lines[j+2], d: lines[j+3] || "3.30", a: lines[j+4] || "3.10" });
           }
         }
       }
 
       if (parsedMatches.length === 0) {
-        outputEl.innerHTML = `<span style="color: #ef4444;">Could not isolate match items. Please ensure valid formatting or use the screenshot uploader.</span>`;
+        outputEl.innerHTML = `<span style="color: #ef4444;">Could not isolate match items automatically. Please paste in format: <strong>TeamA, TeamB, HomeOdds, DrawOdds, AwayOdds</strong></span>`;
         return;
       }
 
@@ -116,7 +137,7 @@
             </div>
           `;
         } catch (err) {
-          html += `<div class="match-item" style="color: #ef4444;">Error fetching backend compute for ${m.home} vs ${m.away}</div>`;
+          html += `<div class="match-item" style="color: #ef4444;">Error calculating ${m.home} vs ${m.away}</div>`;
         }
       }
 
