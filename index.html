@@ -1,103 +1,61 @@
-from fastapi import FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-import math
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-def poisson_probability(lmbda, k):
-    return (math.exp(-lmbda) * (lmbda ** k)) / math.math.factorial(k) if k >= 0 else 0
-
-@app.get("/")
-def home():
-    return {"status": "Mathayo 154 Genius Engine Active (v2.6)"}
-
-@app.get("/predict")
-def predict(
-    home_team: str = Query("Home"),
-    away_team: str = Query("Away"),
-    home_odds: float = Query(2.0),
-    draw_odds: float = Query(3.4),
-    away_odds: float = Query(3.5),
-    home_xg: float = Query(1.4), # Default expected goals baseline
-    away_xg: float = Query(1.1)
-):
-    # 1. Market Devigging (Shin / Margin Normalization)
-    imp_h = 1 / home_odds
-    imp_d = 1 / draw_odds
-    imp_a = 1 / away_odds
-    market_sum = imp_h + imp_d + imp_a
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mathayo 154 Genius Model</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
+    .card { background: #1e293b; padding: 24px; border-radius: 12px; max-width: 700px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
+    h2 { margin-top: 0; color: #38bdf8; text-align: center; }
+    textarea { width: 100%; height: 140px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 10px; box-sizing: border-box; font-family: monospace; font-size: 13px; }
+    .btn { width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 12px; transition: 0.2s; }
+    .btn:hover { background: #1d4ed8; }
+    pre { background: #0f172a; padding: 16px; border-radius: 6px; border: 1px solid #334155; white-space: pre-wrap; font-size: 13px; overflow-x: auto; margin-top: 20px; color: #4ade80; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Mathayo 154 Model</h2>
+    <p style="text-align: center; color: #94a3b8;">Genius Poisson & Market Ensemble Processor</p>
     
-    market_h = imp_h / market_sum
-    market_d = imp_d / market_sum
-    market_a = imp_a / market_sum
-
-    # 2. Poisson Statistical Model Layer (Expected Goals Integration)
-    # Simulate scorelines up to 5 goals
-    poisson_h, poisson_d, poisson_a = 0.0, 0.0, 0.0
-    for h in range(6):
-        for a in range(6):
-        # Dixon-Coles low score correction factor approx
-            p = ((math.exp(-home_xg) * (home_xg ** h)) / math.factorial(h)) * \
-                ((math.exp(-away_xg) * (away_xg ** a)) / math.factorial(a))
-            if h > a:
-                poisson_h += p
-            elif h == a:
-                poisson_d += p
-            else:
-                poisson_a += p
-
-    # Normalize Poisson probabilities
-    p_sum = poisson_h + poisson_d + poisson_a
-    if p_sum > 0:
-        stat_h, stat_d, stat_a = poisson_h/p_sum, poisson_d/p_sum, poisson_a/p_sum
-    else:
-        stat_h, stat_d, stat_a = 0.33, 0.33, 0.33
-
-    # 3. Hybrid Ensemble Blending (60% Statistical Model + 40% Calibrated Market)
-    final_h = (0.60 * stat_h) + (0.40 * market_h)
-    final_d = (0.60 * stat_d) + (0.40 * market_d)
-    final_a = (0.60 * stat_a) + (0.40 * market_a)
+    <label style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 6px;">Paste Match Lines (Format: Home, Away, HomeOdds, DrawOdds, AwayOdds):</label>
+    <textarea id="matchData" placeholder="Paderborn, Freiburg, 3.20, 3.65, 2.20&#10;Hoffenheim, Dortmund, 2.90, 3.90, 2.28"></textarea>
     
-    # Re-normalize final blend
-    total_final = final_h + final_d + final_a
-    final_h /= total_final
-    final_d /= total_final
-    final_a /= total_final
+    <button class="btn" onclick="processMatches()">Run Genius Model Analysis</button>
+    <pre id="output">Analysis results will appear here...</pre>
+  </div>
 
-    # 4. Selection & Safety Grading
-    outcomes = {
-        f"Home Win ({home_team})": final_h,
-        "Draw (X)": final_d,
-        f"Away Win ({away_team})": final_a
-    }
-    best_pick = max(outcomes, key=outcomes.get)
-    best_prob = outcomes[best_pick] * 100
+  <script>
+    async function processMatches() {
+      const outputEl = document.getElementById('output');
+      const text = document.getElementById('matchData').value.trim();
+      if (!text) {
+        outputEl.textContent = 'Please paste at least one match line.';
+        return;
+      }
 
-    if best_prob >= 52:
-        grade = "A+ (Elite Value / High Confidence)"
-    elif best_prob >= 42:
-        grade = "A (Strong Probable Outcome)"
-    elif best_prob >= 35:
-        grade = "B (Moderate Edge)"
-    else:
-        grade = "C (High Variance / Lean Carefully)"
+      outputEl.textContent = 'Processing matches with Render Genius Backend...';
+      const lines = text.split('\n');
+      const results = [];
 
-    return {
-        "match": f"{home_team} vs {away_team}",
-        "recommended_pick": best_pick,
-        "win_probability": f"{best_prob:.1f}%",
-        "safety_grade": grade,
-        "model_probabilities": {
-            "1": round(final_h, 4),
-            "X": round(final_d, 4),
-            "2": round(final_a, 4)
+      for (let line of lines) {
+        const parts = line.split(',').map(s => s.trim());
+        if (parts.length >= 5) {
+          const [home, away, hOdds, dOdds, aOdds] = parts;
+          try {
+            const url = `https://mathayo-backend.onrender.com/predict?home_team=${encodeURIComponent(home)}&away_team=${encodeURIComponent(away)}&home_odds=${hOdds}&draw_odds=${dOdds}&away_odds=${aOdds}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            results.push(data);
+          } catch (err) {
+            results.push({ error: `Failed to calculate ${home} vs ${away}` });
+          }
         }
+      }
+
+      outputEl.textContent = JSON.stringify(results, null, 2);
     }
+  </script>
+</body>
+</html>
