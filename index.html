@@ -129,7 +129,7 @@
       let html = '';
       for (let m of parsedMatches) {
         try {
-          const url = `https://mathayo-backend.vercel.app/predict?home_team=${encodeURIComponent(m.home)}&away_team=${encodeURIComponent(m.away)}&home_odds=${m.h}&draw_odds=${m.d}&away_odds=${m.a}`;
+          const url = `https://mathayo-backend.onrender.com/predict?home_team=${encodeURIComponent(m.home)}&away_team=${encodeURIComponent(m.away)}&home_odds=${m.h}&draw_odds=${m.d}&away_odds=${m.a}`;
           const res = await fetch(url);
           const data = await res.json();
           
