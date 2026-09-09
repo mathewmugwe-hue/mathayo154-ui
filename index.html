@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mathayo 154 Genius Model - v3.4 Engine</title>
-  <script src='[https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js](https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js)'></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
     .card { background: #1e293b; padding: 24px; border-radius: 12px; max-width: 900px; margin: 20px auto; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); }
@@ -27,32 +27,34 @@
   <div class="card">
     <h2>Mathayo 154 Genius Model (v3.4)</h2>
     <p style="text-align: center; color: #94a3b8;">Multi-Format Sportsbook OCR & Independent Valuation Engine</p>
-    
+
     <label style="font-size: 14px; color: #cbd5e1; display: block; margin-bottom: 6px;">Paste Fixtures/Odds Data or Use Screenshot Reader:</label>
     <textarea id="matchData" placeholder="Paste text dumps or sportsbook layouts here...&#10;Example: Hoffenheim vs Stuttgart or vertical odds lists"></textarea>
-    
+
     <div class="dropzone" onclick="document.getElementById('fileInput').click()">
       📸 Drop or Click Screenshot to Scan Pixels (Powered by Tesseract OCR)
       <input type="file" id="fileInput" accept="image/*" style="display: none;" onchange="processScreenshot(event)">
     </div>
-    
+
     <button class="btn" onclick="processMatches()">Run v3.4 Model Analysis</button>
     <div id="output" class="result-box">Structured analysis results will appear here...</div>
   </div>
 
   <script>
+    const BACKEND_BASE_URL = "https://mathayo-backend.onrender.com"; // <- change this if your live backend is actually on a different host (e.g. Vercel)
+
     async function processScreenshot(event) {
       const file = event.target.files[0];
       if (!file) return;
-      
+
       const outputEl = document.getElementById('output');
       outputEl.innerHTML = `<span style="color: #38bdf8;">Scanning screenshot pixels with OCR engine... Please wait.</span>`;
-      
+
       try {
         const { data: { text } } = await Tesseract.recognize(file, 'eng', {
           logger: m => { if(m.status === 'recognizing text') outputEl.innerHTML = `<span style="color: #38bdf8;">OCR Progress: ${Math.round(m.progress * 100)}%</span>`; }
         });
-        
+
         document.getElementById('matchData').value = text;
         outputEl.innerHTML = `<span style="color: #4ade80;">OCR Scan Complete! Raw text extracted into textarea. Click 'Run v3.4 Model Analysis' to process.</span>`;
       } catch (err) {
@@ -84,10 +86,10 @@
         if (line.includes(',')) {
           let parts = line.split(',').map(s => s.trim());
           if (parts.length >= 5) {
-            parsedMatches.push({ 
-              home: parts[0].replace(/\s+[Cc]$/, '').trim(), 
-              away: parts[1].replace(/\s+[Cc]$/, '').trim(), 
-              h: parts[2], d: parts[3], a: parts[4] 
+            parsedMatches.push({
+              home: parts[0].replace(/\s+[Cc]$/, '').trim(),
+              away: parts[1].replace(/\s+[Cc]$/, '').trim(),
+              h: parts[2], d: parts[3], a: parts[4]
             });
           }
           i++;
@@ -97,10 +99,10 @@
         if (line.toLowerCase().includes(' vs ')) {
           let teams = line.split(/vs/i).map(s => s.trim());
           if (teams.length >= 2) {
-            parsedMatches.push({ 
-              home: teams[0].replace(/\s+[Cc]$/, '').trim(), 
-              away: teams[1].replace(/\s+[Cc]$/, '').trim(), 
-              h: "2.20", d: "3.40", a: "3.10" 
+            parsedMatches.push({
+              home: teams[0].replace(/\s+[Cc]$/, '').trim(),
+              away: teams[1].replace(/\s+[Cc]$/, '').trim(),
+              h: "2.20", d: "3.40", a: "3.10"
             });
           }
           i++;
@@ -121,14 +123,14 @@
             }
 
             if (oddsCandidates.length >= 3) {
-              parsedMatches.push({ 
-                home: potentialHome.replace(/\s+[Cc]$/, '').trim(), 
-                away: potentialAway.replace(/\s+[Cc]$/, '').trim(), 
-                h: oddsCandidates[0], 
-                d: oddsCandidates[1], 
-                a: oddsCandidates[2] 
+              parsedMatches.push({
+                home: potentialHome.replace(/\s+[Cc]$/, '').trim(),
+                away: potentialAway.replace(/\s+[Cc]$/, '').trim(),
+                h: oddsCandidates[0],
+                d: oddsCandidates[1],
+                a: oddsCandidates[2]
               });
-              i += 2; 
+              i += 2;
               continue;
             }
           }
@@ -145,30 +147,33 @@
       let html = '';
       for (let m of parsedMatches) {
         try {
-          const url = `[https://mathayo-backend.onrender.com/predict?home_team=$](https://mathayo-backend.onrender.com/predict?home_team=$){encodeURIComponent(m.home)}&away_team=${encodeURIComponent(m.away)}&home_odds=${m.h}&draw_odds=${m.d}&away_odds=${m.a}`;
+          const url = `${BACKEND_BASE_URL}/predict?home_team=${encodeURIComponent(m.home)}&away_team=${encodeURIComponent(m.away)}&home_odds=${m.h}&draw_odds=${m.d}&away_odds=${m.a}`;
           const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`Backend returned HTTP ${res.status}`);
+          }
           const data = await res.json();
-          
+
           let isPlay = data.verdict && data.verdict.startsWith("RECOMMENDED PLAY");
           let badgeClass = isPlay ? "badge-play" : "badge-noplay";
-          
+
           let outcomesHtml = '';
           if (data.outcomes) {
-            outcomesHtml = data.outcomes.map(o => 
+            outcomesHtml = data.outcomes.map(o =>
               `<div>• ${o.market}: Model <strong>${o.model_prob_pct}%</strong> vs Mkt <strong>${o.market_prob_pct}%</strong> | Edge: <span style="color: ${o.edge_pct >= 0 ? '#4ade80' : '#ef4444'}">${o.edge_pct}%</span> | Kelly: <strong>${o.suggested_stake_pct_bankroll || 0}%</strong></div>`
             ).join('');
           }
 
           html += `
             <div class="match-item">
-              <span class="meta">${data.match || (m.home + ' vs ' + m.away)}</span> 
+              <span class="meta">${data.match || (m.home + ' vs ' + m.away)}</span>
               <span class="badge ${badgeClass}">${data.safety_grade || 'ANALYZED'}</span><br>
               <div style="margin-top: 6px; font-size: 13px;">${outcomesHtml}</div>
               <small style="color: #94a3b8; display: block; margin-top: 4px;">xG [H|A]: ${JSON.stringify(data.calculated_xG_detail || data.calculated_xG)} | Margin: ${data.market_margin_pct}%</small>
             </div>
           `;
         } catch (err) {
-          html += `<div class="match-item" style="color: #ef4444;">Error calculating ${m.home} vs ${m.away}</div>`;
+          html += `<div class="match-item" style="color: #ef4444;">Error calculating ${m.home} vs ${m.away}: ${err.message}</div>`;
         }
       }
 
