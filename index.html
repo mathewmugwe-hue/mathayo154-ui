@@ -81,17 +81,21 @@
         if (line.includes(',')) {
           let parts = line.split(',').map(s => s.trim());
           if (parts.length >= 5) {
-            parsedMatches.push({ home: parts[0], away: parts[1], h: parts[2], d: parts[3], a: parts[4] });
+            let homeName = parts[0].replace(/\s+[Cc]$/, '').trim();
+            let awayName = parts[1].replace(/\s+[Cc]$/, '').trim();
+            parsedMatches.push({ home: homeName, away: awayName, h: parts[2], d: parts[3], a: parts[4] });
           } else if (parts.length >= 4) {
-            parsedMatches.push({ home: parts[0], away: parts[1], h: parts[2], d: parts[3], a: "2.50" });
+            let homeName = parts[0].replace(/\s+[Cc]$/, '').trim();
+            let awayName = parts[1].replace(/\s+[Cc]$/, '').trim();
+            parsedMatches.push({ home: homeName, away: awayName, h: parts[2], d: parts[3], a: "2.50" });
           }
           i++;
           continue;
         }
 
         if (i + 3 < lines.length && !isNaN(lines[i+2]) && !isNaN(lines[i+3])) {
-          let homeTeam = lines[i];
-          let awayTeam = lines[i+1];
+          let homeTeam = lines[i].replace(/\s+[Cc]$/, '').trim();
+          let awayTeam = lines[i+1].replace(/\s+[Cc]$/, '').trim();
           let oddsList = [];
           for (let j = i + 2; j < i + 8 && j < lines.length; j++) {
             if (!isNaN(lines[j]) && parseFloat(lines[j]) > 1.0 && parseFloat(lines[j]) < 25.0) {
@@ -110,7 +114,9 @@
       if (parsedMatches.length === 0) {
         for (let j = 0; j < lines.length - 3; j += 2) {
           if (!isNaN(lines[j+2])) {
-            parsedMatches.push({ home: lines[j], away: lines[j+1], h: lines[j+2], d: lines[j+3] || "3.30", a: lines[j+4] || "3.10" });
+            let homeTeam = lines[j].replace(/\s+[Cc]$/, '').trim();
+            let awayTeam = lines[j+1].replace(/\s+[Cc]$/, '').trim();
+            parsedMatches.push({ home: homeTeam, away: awayTeam, h: lines[j+2], d: lines[j+3] || "3.30", a: lines[j+4] || "3.10" });
           }
         }
       }
